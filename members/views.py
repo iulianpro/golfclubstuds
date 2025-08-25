@@ -2,21 +2,14 @@
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
-from django.views.generic import ListView, DetailView, FormView
+from django.views.generic import ListView, DetailView, FormView, UpdateView
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.utils.html import escape
 
 from core.models import Member
-
-
-class MemberForm(forms.ModelForm):
-    """Minimal form for creating a new member."""
-    class Meta:
-        model = Member
-        fields = ['name', 'email']  # status defaults to CURRENT
+from .forms import MemberForm
 
 
 class MemberListView(LoginRequiredMixin, ListView):
@@ -47,7 +40,6 @@ class MemberCreateView(LoginRequiredMixin, FormView):
 
 
 class MemberToggleView(LoginRequiredMixin, DetailView):
-    """HTMX-aware toggle: returns a fragment on HTMX requests; redirects otherwise."""
     model = Member
 
     def post(self, request, *args, **kwargs):
@@ -55,29 +47,32 @@ class MemberToggleView(LoginRequiredMixin, DetailView):
         obj.toggle_status(save=True)
 
         if getattr(request, 'htmx', False):
-            # Return small HTML fragment + trigger a client-side event
-            html = (
-                '<p>Status: <strong>{status}</strong></p>'
-                '<form '
-                '  hx-post="{url}" '
-                '  hx-target="#member-status" '
-                '  hx-swap="outerHTML">'
-                "{csrf}<button type='submit'>Toggle status</button>"
-                '</form>'
-            ).format(
-                status=escape(obj.get_status_display()),
-                url=escape(reverse('members:toggle', kwargs={'pk': obj.pk})),
-                csrf=self._csrf_token_input(request),
-            )
+            html = render_to_string(
+                'members/_member_status.html', {'member': obj}, request=request)
             resp = HttpResponse(html)
-            # Optional: trigger a toast on client (we’ll listen later in base.html)
             resp['HX-Trigger'] = 'memberStatusToggled'
             return resp
 
-        # Non-HTMX fallback: classic redirect
         return HttpResponseRedirect(reverse('members:detail', kwargs={'pk': obj.pk}))
 
-    def _csrf_token_input(self, request):
-        from django.middleware.csrf import get_token
-        token = get_token(request)
-        return f"<input type='hidden' name='csrfmiddlewaretoken' value='{token}'>"
+
+class MemberUpdateView(LoginRequiredMixin, UpdateView):
+    """Edit an existing member."""
+    model = Member
+    form_class = MemberForm
+    template_name = 'members/form.html'  # reuse the same template as create
+
+    def get_success_url(self):
+        # After successful update, go back to detail
+        messages.success(self.request, 'Member updated successfully.')
+        return reverse('members:detail', kwargs={'pk': self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        # Let the template know this is an edit
+        ctx = super().get_context_data(**kwargs)
+        ctx['is_update'] = True
+        return ctx
+
+
+def well_known_noop(request):
+    return HttpResponse(status=204)

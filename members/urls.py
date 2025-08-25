@@ -14,6 +14,9 @@ urlpatterns = [
     # Member detail
     path('members/<int:pk>/', views.MemberDetailView.as_view(), name='detail'),
 
+    # Update existing member
+    path('members/<int:pk>/edit/', views.MemberUpdateView.as_view(), name='edit'),
+
     # POST-only toggle status (redirects back to detail)
     path('members/<int:pk>/toggle/',
          views.MemberToggleView.as_view(), name='toggle'),

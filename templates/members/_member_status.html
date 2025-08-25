@@ -1,0 +1,14 @@
+<div id="member-status">
+    <p class="mb-2">Status: <strong>{{ member.get_status_display }}</strong></p>
+
+    <div class="d-flex gap-2">
+        <form method="post" hx-post="{% url 'members:toggle' member.pk %}" hx-target="#member-status"
+            hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-primary">Toggle status</button>
+        </form>
+
+        <a href="{% url 'members:edit' member.pk %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'members:list' %}" class="btn btn-link">Back to list</a>
+    </div>
+</div>

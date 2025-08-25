@@ -17,7 +17,17 @@ class MemberListView(LoginRequiredMixin, ListView):
     model = Member
     template_name = 'members/list.html'
     context_object_name = 'members'
-    paginate_by = 10  # demo-friendly pagination
+    paginate_by = 3
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q', '').strip()
+        return qs.filter(name__icontains=q) if q else qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['q'] = self.request.GET.get('q', '')
+        return ctx
 
 
 class MemberDetailView(LoginRequiredMixin, DetailView):

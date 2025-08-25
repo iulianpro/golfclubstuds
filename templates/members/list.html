@@ -3,11 +3,21 @@
 {% block title %}Members · GolfClubStuds{% endblock %}
 {% block content %}
 <h1 class="h4 mb-3">Members</h1>
+
+<form class="d-flex gap-2 mb-3" method="get" role="search">
+    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search by name">
+    <button class="btn btn-primary" type="submit">Search</button>
+    <a class="btn btn-outline-secondary{% if not q %} disabled{% endif %}" href="{% url 'members:list' %}"
+        {%if notq%}tabindex="-1" aria-disabled="true" {% endif %}>Reset</a>
+</form>
+
 <ul class="list-group mb-3">
     {% for m in members %}
     <li class="list-group-item d-flex justify-content-between align-items-center">
         <a href="{% url 'members:detail' m.pk %}">{{ m.name }}</a>
-        <span class="badge text-bg-secondary">{{ m.get_status_display }}</span>
+        <span class="badge {% if m.status == 'CURRENT' %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+            {{ m.get_status_display }}
+        </span>
     </li>
     {% empty %}
     <li class="list-group-item">No members yet.</li>
@@ -20,8 +30,8 @@
         {% if page_obj.has_previous %}
         <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
         {% endif %}
-        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{
-                page_obj.paginator.num_pages }}</span></li>
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }}
+                of {{ page_obj.paginator.num_pages }}</span></li>
         {% if page_obj.has_next %}
         <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
         {% endif %}
